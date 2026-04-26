@@ -10,15 +10,37 @@ def generate_feedback(score):
     else:
         return "Low performance, requires immediate attention"
 
+def load_data(file):
+    try:
+        df = pd.read_csv(file)
+        print("\nData loaded from file.")
+    except:
+        print("\nFile not found. Using default dataset.\n")
+
+        # Default dataset (Ujjawal included)
+        data = {
+            "Name": ["Ujjawal", "Aman", "Riya", "Raj", "Simran"],
+            "Math": [78, 70, 85, 60, 90],
+            "Physics": [72, 60, 78, 55, 88],
+            "Chemistry": [70, 65, 82, 58, 85],
+            "English": [80, 80, 90, 65, 92]
+        }
+        df = pd.DataFrame(data)
+
+    return df
+
 def generate_story(file):
-    df = pd.read_csv(file)
+    df = load_data(file)
 
     print("\nData Preview:\n")
     print(df.head())
 
+    # Subject columns
+    subjects = ["Math", "Physics", "Chemistry", "English"]
+
     # Total & Percentage
-    df['Total'] = df.select_dtypes(include='number').sum(axis=1)
-    df['Percentage'] = df['Total'] / (len(df.columns) - 2)
+    df['Total'] = df[subjects].sum(axis=1)
+    df['Percentage'] = df['Total'] / len(subjects)
 
     # Ranking
     df = df.sort_values(by='Total', ascending=False).reset_index(drop=True)
@@ -32,30 +54,28 @@ def generate_story(file):
     for _, row in df.iterrows():
         print(f"{row['Name']} (Rank {row['Rank']}):")
 
-        for subject in df.columns:
-            if subject not in ['Name', 'Total', 'Percentage', 'Rank']:
-                feedback = generate_feedback(row[subject])
-                print(f"  {subject}: {row[subject]} - {feedback}")
+        for subject in subjects:
+            feedback = generate_feedback(row[subject])
+            print(f"  {subject}: {row[subject]} - {feedback}")
 
         print()
 
     # Class Insights
     print("\nClass-Level Insights:\n")
-    avg = df.mean(numeric_only=True)
+    avg = df[subjects].mean()
 
-    for subject in avg.index:
-        if subject not in ['Total', 'Percentage', 'Rank']:
-            if avg[subject] >= 75:
-                print(f"{subject} is performing well across the class.")
-            elif avg[subject] >= 60:
-                print(f"{subject} shows average performance.")
-            else:
-                print(f"{subject} needs improvement across students.")
+    for subject in subjects:
+        if avg[subject] >= 75:
+            print(f"{subject} is performing well across the class.")
+        elif avg[subject] >= 60:
+            print(f"{subject} shows average performance.")
+        else:
+            print(f"{subject} needs improvement across students.")
 
-    # Final Suggestions
+    # Suggestions
     print("\nSuggestions:\n")
 
-    weak_subjects = [sub for sub in avg.index if avg[sub] < 60]
+    weak_subjects = [sub for sub in subjects if avg[sub] < 60]
 
     if weak_subjects:
         print("Students should focus more on:", ", ".join(weak_subjects))
@@ -63,5 +83,5 @@ def generate_story(file):
         print("Overall performance across subjects is balanced.")
 
 if __name__ == "__main__":
-    file = input("Enter CSV file name: ")
+    file = input("Enter CSV file name (or press Enter to use default): ")
     generate_story(file)
